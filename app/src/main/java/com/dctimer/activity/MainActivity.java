@@ -266,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int[] subid = {R.array.item_wca, R.array.item_222, R.array.item_333, R.array.item_444, R.array.item_555, R.array.item_666,
                 R.array.item_666, R.array.item_mega, R.array.item_pyr, R.array.item_sq1, R.array.item_clk, R.array.item_skewb,
                 R.array.item_mnl, R.array.item_cmt, R.array.item_gear, R.array.item_smc, R.array.item_15p, R.array.item_other,
-                R.array.item_333_sub, R.array.item_bandage, R.array.item_minx_sub, R.array.item_relay};
+                R.array.item_333_sub, R.array.item_bandage, R.array.item_minx_sub, R.array.item_relay, R.array.item_smart_333};
         for (int i = 0; i < subid.length; i++)
             StringUtils.scrambleSubitems[i] = getResources().getStringArray(subid[i]);
         for (int i = 0; i < itemStr.length; i++)
@@ -408,13 +408,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int smartSectionStart = cells.size();
         String[] smartSettingItems = getResources().getStringArray(R.array.item_smart);
         Utils.addSection(headers, cells, getString(R.string.title_smart), smartSettingItems,
-                new int[] {0, 0, 0, 1, 0},
+                new int[] {0, 0, 0, 0, 1, 0},
                 new Object[] {getResources().getStringArray(R.array.opt_smart_solve_method)[smartCubeSolveMethod], getSmartCubeOrientationLabel(smartCubeSolveOrientation),
+                        getSmartCubeOrientationLabel(smartCubeTrainingOrientation),
                         getResources().getStringArray(R.array.opt_smart_scramble_progress)[smartCubeScrambleProgressStyle],
                         smartCubeGyroFollow, getResources().getStringArray(R.array.opt_smart_layout)[smartCubeLayoutMode]},
-                new int[5],
-                new int[] {ST_SMART_SOLVE_METHOD, ST_SMART_ORIENTATION, ST_SMART_SCRAMBLE_PROGRESS, ST_SMART_GYRO_FOLLOW, ST_SMART_LAYOUT});
-        cells.get(smartSectionStart + 4).put("desc", getString(R.string.smart_cube_gyro_follow_desc));
+                new int[6],
+                new int[] {ST_SMART_SOLVE_METHOD, ST_SMART_ORIENTATION, ST_SMART_TRAINING_ORIENTATION, ST_SMART_SCRAMBLE_PROGRESS, ST_SMART_GYRO_FOLLOW, ST_SMART_LAYOUT});
+        cells.get(smartSectionStart + 5).put("desc", getString(R.string.smart_cube_gyro_follow_desc));
         Utils.addSection(headers, cells, getString(R.string.title_scramble), getResources().getStringArray(R.array.item_scramble),
                 new int[] {2, 1, 1, 2, 0},
                 new Object[] {String.valueOf(scrambleSize), monoFont, showImage, "", ""},
@@ -669,7 +670,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         final LayoutInflater factory;
         switch (id) {
             case R.id.action_scramble:  //打乱详情
-                ScrambleDetailDialog scrambleDialog = ScrambleDetailDialog.newInstance(currentScramble.getScramble(), currentScramble.getScrambleLen(), currentScramble.is333Scramble() ? 3 : 0);
+                ScrambleDetailDialog scrambleDialog = ScrambleDetailDialog.newInstance(currentScramble.getScramble(), currentScramble.getScrambleLen(), currentScramble.is333StateScramble() ? 3 : 0);
                 scrambleDialog.show(getSupportFragmentManager(), "ScrambleDetail");
                 break;
             case R.id.action_import_scramble:   //导入打乱
@@ -1407,7 +1408,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void ensureSmartCubeScrambleCache() {
-        if (currentScramble == null || !currentScramble.is333Scramble() || TextUtils.isEmpty(currentScramble.getScramble())) {
+        if (currentScramble == null || !currentScramble.is333StateScramble() || TextUtils.isEmpty(currentScramble.getScramble())) {
             clearSmartCubeScrambleCache();
             return;
         }
@@ -1813,7 +1814,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             btnRight.setVisibility(View.VISIBLE);
             btnRight.setEnabled(true);
         } else {
-            if (shouldShowTimerPageCubeState() && currentScramble.is333Scramble()) {
+            if (shouldShowTimerPageCubeState() && currentScramble.is333StateScramble()) {
                 updateSmartCubeScrambleProgress(getActiveSmartCube());
                 nextText = buildSmartCubeScrambleText();
             } else {
@@ -2132,7 +2133,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void moveCube(SmartCube cube, int move, int time, boolean trackScrambleDeviation) {
         String previousState = cube.getCubeState();
-        cube.applyMove(move, time, currentScramble.getCubeState());
+        cube.applyMove(move, time, currentScramble.getCubeState(), new SmartCube.CompletionChecker() {
+            @Override
+            public boolean isComplete(String cubeState) {
+                return SmartCubeTraining.isComplete(scrambleIdx, cubeState);
+            }
+        });
         updateSmartCubeScrambleProgress(cube, trackScrambleDeviation ? move : -1);
         updateSmartCubeMoveUi(previousState, cube.getCubeState(), move);
         if (timer.getTimerState() == DCTTimer.READY || timer.getTimerState() == DCTTimer.INSPECTING) {
@@ -2203,7 +2209,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             @Override
             public void run() {
                 if (shouldShowTimerPageCubeState()) {
-                    animateTimerPageCubeState(fromState, toState, move);
+                    animateTimerPageCubeState(getDisplaySmartCubeState(fromState), getDisplaySmartCubeState(toState), getDisplaySmartCubeMove(move));
                 }
                 androidx.fragment.app.Fragment fragment = getSupportFragmentManager().findFragmentByTag("CubeState");
                 if (fragment instanceof CubeStateDialog) {
@@ -2859,6 +2865,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         smartCubeSolveOrientation = i;
                         stAdapter.setText(position, getSmartCubeOrientationLabel(i));
                         setPref("scori", i);
+                        dialogInterface.dismiss();
+                    }
+                }).setNegativeButton(R.string.btn_cancel, null).show();
+                break;
+            case ST_SMART_TRAINING_ORIENTATION:
+                new AlertDialog.Builder(context).setSingleChoiceItems(getSmartCubeOrientationLabels(), smartCubeTrainingOrientation, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        if (smartCubeTrainingOrientation == i) return;
+                        smartCubeTrainingOrientation = i;
+                        stAdapter.setText(position, getSmartCubeOrientationLabel(i));
+                        setPref("sctri", i);
                         dialogInterface.dismiss();
                     }
                 }).setNegativeButton(R.string.btn_cancel, null).show();
@@ -3584,7 +3602,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     };
 
     public void show333Hint(final int idx) {
-        if (currentScramble.is333Scramble()) {
+        if (currentScramble.is333StateScramble()) {
             if (idx == 0) {
                 currentScramble.updateHint(0);
                 tvScramble.setText(currentScramble.getScramble());
@@ -4307,6 +4325,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             hideTimerPageCubeState();
             return;
         }
+        cubeState = getDisplaySmartCubeState(cubeState);
         setSmartCubeImageSize();
         scrambleView.setVisibility(View.GONE);
         if (smartCube3DView != null) {
@@ -4349,6 +4368,24 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         hideTimerPageCubeState();
         scrambleView.setVisibility(View.VISIBLE);
         scrambleView.setImageBitmap(bitmap);
+    }
+
+    private boolean shouldDisplaySmartTrainingOrientation() {
+        return SmartCubeTraining.isTrainingOrientationMode(scrambleIdx);
+    }
+
+    public String getDisplaySmartCubeState(String cubeState) {
+        if (!shouldDisplaySmartTrainingOrientation()) {
+            return cubeState;
+        }
+        return Utils.orientFacelets(cubeState, smartCubeTrainingOrientation);
+    }
+
+    public int getDisplaySmartCubeMove(int move) {
+        if (!shouldDisplaySmartTrainingOrientation()) {
+            return move;
+        }
+        return Utils.orientSmartCubeMove(move, smartCubeTrainingOrientation);
     }
 
     private void setTextsColor() {
@@ -4734,7 +4771,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         inputTime();
                         break;
                     case 6: //查看打乱详情
-                        ScrambleDetailDialog scrambleDialog = ScrambleDetailDialog.newInstance(currentScramble.getScramble(), currentScramble.getScrambleLen(), currentScramble.is333Scramble() ? 3 : 0);
+                        ScrambleDetailDialog scrambleDialog = ScrambleDetailDialog.newInstance(currentScramble.getScramble(), currentScramble.getScrambleLen(), currentScramble.is333StateScramble() ? 3 : 0);
                         scrambleDialog.show(getSupportFragmentManager(), "ScrambleDetail");
                         break;
                     case 7: //切换分组

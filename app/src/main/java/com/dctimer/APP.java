@@ -99,6 +99,7 @@ public class APP extends Application {
     public static int uiMode = -1;
     public static int bleDeviceType;
     public static int smartCubeSolveOrientation;
+    public static int smartCubeTrainingOrientation;
     public static int smartCubeSolveMethod;
     public static int smartCubeScrambleProgressStyle;
     public static boolean smartCubeGyroFollow;
@@ -136,7 +137,7 @@ public class APP extends Application {
 
     public void readPref(SharedPreferences sp) {	//读取配置 TODO
         int idx = sp.getInt("sel", 1);
-        if (idx > 19 || idx < -1) idx = 1;
+        if (idx > 22 || idx < -1) idx = 1;
         int idx2 = sp.getInt("sel2", -1);
         if (idx2 < 0 || idx2 > 31) {
             if (idx == 1) idx2 = 1;
@@ -231,6 +232,8 @@ public class APP extends Application {
         dataFormat = sp.getInt("dform", AudioFormat.ENCODING_PCM_8BIT);
         smartCubeSolveOrientation = sp.getInt("scori", 0);
         if (smartCubeSolveOrientation < 0 || smartCubeSolveOrientation >= 24) smartCubeSolveOrientation = 0;
+        smartCubeTrainingOrientation = sp.getInt("sctri", 13);
+        if (smartCubeTrainingOrientation < 0 || smartCubeTrainingOrientation >= 24) smartCubeTrainingOrientation = 13;
         smartCubeSolveMethod = sp.getInt("scmethod", 0);
         if (smartCubeSolveMethod < 0 || smartCubeSolveMethod > 1) smartCubeSolveMethod = 0;
         smartCubeScrambleProgressStyle = sp.getInt("scadv", 0);
@@ -260,7 +263,7 @@ public class APP extends Application {
         colors[6] = 0xff000000;
         for (int i = 0; i < 4; i++) swipeType[i] = i + 1;
         samplingRate = 44100; dataFormat = AudioFormat.ENCODING_PCM_8BIT;
-        smartCubeSolveOrientation = 0; smartCubeSolveMethod = 0; smartCubeScrambleProgressStyle = 0;
+        smartCubeSolveOrientation = 0; smartCubeTrainingOrientation = 13; smartCubeSolveMethod = 0; smartCubeScrambleProgressStyle = 0;
         smartCubeGyroFollow = true; smartCubeLayoutMode = 0;
     }
 

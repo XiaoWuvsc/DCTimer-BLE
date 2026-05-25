@@ -134,16 +134,17 @@ public class CubeStateDialog extends DialogFragment {
     private void setImage() {
         SmartCube currentCube = resolveCube();
         if (currentCube != null) {
+            String displayState = getDisplayState(currentCube.getCubeState());
             if (cube3DView != null) {
                 cube3DView.setVisibility(View.VISIBLE);
                 if (imageView != null) {
                     imageView.setVisibility(View.GONE);
                 }
-                cube3DView.showCubeState(currentCube.getCubeState());
+                cube3DView.showCubeState(displayState);
                 applyLatestGyro();
             } else if (imageView != null) {
                 imageView.setVisibility(View.VISIBLE);
-                imageView.showCubeState(currentCube.getCubeState());
+                imageView.showCubeState(displayState);
             }
         }
     }
@@ -164,11 +165,12 @@ public class CubeStateDialog extends DialogFragment {
         if (cube != null) {
             cube.setCubeState(toState);
         }
+        int displayMove = getDisplayMove(move);
         if (cube3DView != null) {
-            cube3DView.animateMove(fromState, toState, move);
+            cube3DView.animateMove(getDisplayState(fromState), getDisplayState(toState), displayMove);
             applyLatestGyro();
         } else if (imageView != null) {
-            imageView.animateMove(fromState, toState, move);
+            imageView.animateMove(getDisplayState(fromState), getDisplayState(toState), displayMove);
         }
     }
 
@@ -218,5 +220,19 @@ public class CubeStateDialog extends DialogFragment {
             }
         }
         return cube;
+    }
+
+    private String getDisplayState(String state) {
+        if (getActivity() instanceof MainActivity) {
+            return ((MainActivity) getActivity()).getDisplaySmartCubeState(state);
+        }
+        return state;
+    }
+
+    private int getDisplayMove(int move) {
+        if (getActivity() instanceof MainActivity) {
+            return ((MainActivity) getActivity()).getDisplaySmartCubeMove(move);
+        }
+        return move;
     }
 }

@@ -98,6 +98,10 @@ public class SmartCube implements Serializable {
     }
 
     public void applyMove(int move, int time, String scramble) {
+        applyMove(move, time, scramble, null);
+    }
+
+    public void applyMove(int move, int time, String scramble, CompletionChecker completionChecker) {
         rawData.add(move << 16 | time);
         cc = cc.move(move);
         cubeState = Util.toFaceCube(cc);
@@ -109,7 +113,10 @@ public class SmartCube implements Serializable {
             scrambledNotified = true;
             callback.onScrambled(this);
         }
-        if (callback != null && Utils.isSolvedIgnoringRotation(cubeState))
+        boolean completed = completionChecker == null
+                ? Utils.isSolvedIgnoringRotation(cubeState)
+                : completionChecker.isComplete(cubeState);
+        if (callback != null && completed)
             callback.onSolved(this);
     }
 
@@ -209,5 +216,9 @@ public class SmartCube implements Serializable {
     public interface StateChangedCallback {
         void onScrambled(SmartCube cube);
         void onSolved(SmartCube cube);
+    }
+
+    public interface CompletionChecker {
+        boolean isComplete(String cubeState);
     }
 }

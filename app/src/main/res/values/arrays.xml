@@ -23,6 +23,7 @@
         <item>Bandaged Cube</item>
         <item>Megaminx subsets</item>
         <item>Relay</item>
+        <item>Smart 3x3</item>
     </array>
 
     <array name="item_wca">
@@ -222,6 +223,14 @@
         <item>Mini Guildford challenge</item>
     </array>
 
+    <array name="item_smart_333">
+        <item>WCA</item>
+        <item>OLL training</item>
+        <item>PLL training</item>
+        <item>Last layer training</item>
+        <item>F2L training</item>
+    </array>
+
     <array name="opt_penalty">
         <item>No penalty</item>
         <item>"+2"</item>
@@ -370,6 +379,7 @@
     <array name="item_smart">
         <item>Use method</item>
         <item>Solution orientation</item>
+        <item>Training orientation</item>
         <item>Scramble progress style</item>
         <item>Gyro follows view</item>
         <item>Layout</item>

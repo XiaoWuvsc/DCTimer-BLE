@@ -23,6 +23,7 @@
         <item>捆绑魔方</item>
         <item>五魔子集</item>
         <item>连拧</item>
+        <item>智能3阶</item>
     </array>
 
     <array name="item_wca">
@@ -185,6 +186,14 @@
         <item>Mini Guildford challenge</item>
     </array>
 
+    <array name="item_smart_333">
+        <item>WCA</item>
+        <item>OLL训练</item>
+        <item>PLL训练</item>
+        <item>顶层训练</item>
+        <item>F2L训练</item>
+    </array>
+
     <array name="opt_penalty">
         <item>无惩罚</item>
         <item>"+2"</item>
@@ -315,6 +324,7 @@
     <array name="item_smart">
         <item>使用解法</item>
         <item>解法朝向基准</item>
+        <item>训练朝向</item>
         <item>打乱推进样式</item>
         <item>陀螺仪跟随视角</item>
         <item>布局</item>

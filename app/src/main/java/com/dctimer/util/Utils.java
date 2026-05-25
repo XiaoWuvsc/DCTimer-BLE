@@ -931,20 +931,22 @@ public class Utils {
         }
         char[] oriented = new char[54];
         for (int i = 0; i < STICKERS.length; i++) {
-            Sticker sticker = STICKERS[i];
-            int face = sticker.sourceIndex / 9;
-            int newFace = faceMap[face];
-            int[] normal = faceVector(newFace);
-            int[] right = faceRightVector(newFace);
-            int[] up = faceUpVector(newFace);
-            int x = dot(sticker.x, sticker.y, sticker.z, right[0], right[1], right[2]);
-            int y = dot(sticker.x, sticker.y, sticker.z, up[0], up[1], up[2]);
-            int z = dot(sticker.x, sticker.y, sticker.z, normal[0], normal[1], normal[2]);
-            int row = 1 - y;
-            int col = x + 1;
-            oriented[newFace * 9 + row * 3 + col] = facelets.charAt(i);
+            oriented[getOrientedStickerIndex(STICKERS[i], faceMap)] = facelets.charAt(i);
         }
         return new String(oriented);
+    }
+
+    private static int getOrientedStickerIndex(Sticker sticker, int[] faceMap) {
+        int face = sticker.sourceIndex / 9;
+        int newFace = faceMap[face];
+        int[] normal = faceVector(newFace);
+        int[] right = faceRightVector(newFace);
+        int[] up = faceUpVector(newFace);
+        int x = dot(sticker.x, sticker.y, sticker.z, right[0], right[1], right[2]);
+        int y = dot(sticker.x, sticker.y, sticker.z, up[0], up[1], up[2]);
+        int row = 1 - y;
+        int col = x + 1;
+        return newFace * 9 + row * 3 + col;
     }
 
     public static int orientSmartCubeMove(int move, int orientationIndex) {
@@ -956,6 +958,18 @@ public class Utils {
             return move;
         }
         return faceMap[move / 3] * 3 + move % 3;
+    }
+
+    public static int unorientSmartCubeMove(int move, int orientationIndex) {
+        if (move < 0 || move >= 18) {
+            return move;
+        }
+        for (int candidate = 0; candidate < 18; candidate++) {
+            if (orientSmartCubeMove(candidate, orientationIndex) == move) {
+                return candidate;
+            }
+        }
+        return move;
     }
 
     public static int[] getSmartCubeOrientationPair(int orientationIndex) {
