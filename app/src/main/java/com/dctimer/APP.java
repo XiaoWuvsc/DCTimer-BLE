@@ -137,7 +137,7 @@ public class APP extends Application {
 
     public void readPref(SharedPreferences sp) {	//读取配置 TODO
         int idx = sp.getInt("sel", 1);
-        if (idx > 22 || idx < -1) idx = 1;
+        if (idx > 21 || idx < -1) idx = 1;
         int idx2 = sp.getInt("sel2", -1);
         if (idx2 < 0 || idx2 > 31) {
             if (idx == 1) idx2 = 1;

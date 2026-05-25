@@ -145,6 +145,14 @@ public class SmartCube implements Serializable {
         scrambledNotified = false;
     }
 
+    public void resetSolveTracking() {
+        rawData = new ArrayList<>();
+        preIdx = 0;
+        solveStartState = null;
+        targetState = null;
+        scrambledNotified = false;
+    }
+
     public void clearLastReconstruction() {
         reconstruction = null;
         reconstructedMoves = 0;

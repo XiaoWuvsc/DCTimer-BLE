@@ -1,6 +1,7 @@
 package com.dctimer.model;
 
 import com.dctimer.APP;
+import com.dctimer.util.Utils;
 
 import org.junit.Test;
 
@@ -13,9 +14,9 @@ public class SmartCubeTrainingTest {
 
     @Test
     public void smart333UsesLastScrambleGroupIndex() {
-        assertTrue(SmartCubeTraining.isSmart333(22 << 5));
-        assertTrue(SmartCubeTraining.isSmart333((22 << 5) + 4));
-        assertFalse(SmartCubeTraining.isSmart333((21 << 5) + 4));
+        assertTrue(SmartCubeTraining.isSmart333(21 << 5));
+        assertTrue(SmartCubeTraining.isSmart333((21 << 5) + 4));
+        assertFalse(SmartCubeTraining.isSmart333((20 << 5) + 4));
         assertFalse(SmartCubeTraining.isTrainingOrientationMode(SmartCubeTraining.SMART_333_WCA));
         assertTrue(SmartCubeTraining.isTrainingOrientationMode(SmartCubeTraining.SMART_333_OLL));
     }
@@ -57,6 +58,41 @@ public class SmartCubeTrainingTest {
 
             assertTrue(SmartCubeTraining.isComplete(SmartCubeTraining.SMART_333_F2L, ollUnsolved));
             assertFalse(SmartCubeTraining.isComplete(SmartCubeTraining.SMART_333_OLL, ollUnsolved));
+        } finally {
+            APP.smartCubeTrainingOrientation = originalOrientation;
+        }
+    }
+
+    @Test
+    public void ollTrainingStopsWhenTrainingOrientationIsYellowTopGreenFront() {
+        int originalOrientation = APP.smartCubeTrainingOrientation;
+        try {
+            APP.smartCubeTrainingOrientation = 13;
+            char[] displayFacelets = SOLVED.toCharArray();
+            displayFacelets[9] = 'L';
+            displayFacelets[36] = 'R';
+
+            String physicalState = Utils.unorientFacelets(new String(displayFacelets), APP.smartCubeTrainingOrientation);
+
+            assertTrue(SmartCubeTraining.isComplete(SmartCubeTraining.SMART_333_OLL, physicalState));
+            assertFalse(SmartCubeTraining.isComplete(SmartCubeTraining.SMART_333_PLL, physicalState));
+        } finally {
+            APP.smartCubeTrainingOrientation = originalOrientation;
+        }
+    }
+
+    @Test
+    public void f2lTrainingStopsWhenTrainingOrientationIsYellowTopGreenFront() {
+        int originalOrientation = APP.smartCubeTrainingOrientation;
+        try {
+            APP.smartCubeTrainingOrientation = 13;
+            char[] displayFacelets = SOLVED.toCharArray();
+            displayFacelets[0] = 'R';
+
+            String physicalState = Utils.unorientFacelets(new String(displayFacelets), APP.smartCubeTrainingOrientation);
+
+            assertTrue(SmartCubeTraining.isComplete(SmartCubeTraining.SMART_333_F2L, physicalState));
+            assertFalse(SmartCubeTraining.isComplete(SmartCubeTraining.SMART_333_OLL, physicalState));
         } finally {
             APP.smartCubeTrainingOrientation = originalOrientation;
         }

@@ -77,8 +77,8 @@ public class Scrambler {
             {30, 25},   //bandage
             {30, 20},   //mega subsets
             {5, 0, 0, 0, 0, 0, 0},  //relay
-            {0, 0, -60, 0, 0, 0, 0, 0, -70, 0, 0, 0, 0, -80, -100, 0, -60, 5},  //wca
             {0, 0, 0, 0, 0}, //smart 3x3
+            {0, 0, -60, 0, 0, 0, 0, 0, -70, 0, 0, 0, 0, -80, -100, 0, -60, 5},  //wca
     };
     private static String[] rotate5 = {"", "3Fw", "3Fw'", "3Fw 3Uw", "3Fw 3Uw2", "3Fw 3Uw'", "3Fw' 3Uw", "3Fw' 3Uw2", "3Fw' 3Uw'", "3Rw", "3Rw2", "3Rw'",
             "3Rw 3Uw", "3Rw 3Uw2", "3Rw 3Uw'", "3Rw2 3Uw", "3Rw2 3Uw2", "3Rw2 3Uw'", "3Rw' 3Uw", "3Rw' 3Uw2", "3Rw' 3Uw'", "3Uw", "3Uw2", "3Uw'"};
@@ -267,7 +267,7 @@ public class Scrambler {
         cubeState = "";
         scrambleIdx = 0;
         if (resetLength) {
-            if (category < 0) scrambleLen = defaultLength[21][category & 31];
+            if (category < 0) scrambleLen = defaultLength[22][category & 31];
             else scrambleLen = defaultLength[category >> 5][category & 31];
         }
         switch (category) {
@@ -610,21 +610,21 @@ public class Scrambler {
                 imageType = 3;
                 scrambleList.add(scr);
                 break;
-            case 704:   //智能3阶-WCA
+            case 672:   //智能3阶-WCA
                 scr = scramble333();
                 imageType = 3;
                 scrambleList.add(scr);
                 hint = solve333(scr);
                 break;
-            case 705:   //智能3阶-OLL
-            case 707:   //智能3阶-顶层
+            case 673:   //智能3阶-OLL
+            case 675:   //智能3阶-顶层
                 cubeState = Tools.randomLastLayer();
                 scr = unorientSmartTrainingScramble(cube3.solution(cubeState));
                 cubeState = Tools.fromScramble(scr);
                 imageType = 3;
                 scrambleList.add(scr);
                 break;
-            case 706:   //智能3阶-PLL
+            case 674:   //智能3阶-PLL
                 do {
                     cubeState = Tools.randomPLL();
                     scr = unorientSmartTrainingScramble(cube3.solution(cubeState));
@@ -633,7 +633,7 @@ public class Scrambler {
                 imageType = 3;
                 scrambleList.add(scr);
                 break;
-            case 708:   //智能3阶-F2L
+            case 676:   //智能3阶-F2L
                 cubeState = Tools.randomCrossSolved();
                 scr = unorientSmartTrainingScramble(cube3.solution(cubeState));
                 cubeState = Tools.fromScramble(scr);
@@ -1166,14 +1166,14 @@ public class Scrambler {
     }
 
     private String unorientSmartTrainingScramble(String scramble) {
-        if (TextUtils.isEmpty(scramble)) {
+        if (scramble == null || scramble.length() == 0) {
             return scramble;
         }
         StringBuilder builder = new StringBuilder();
         String[] moves = scramble.trim().split("\\s+");
         for (String move : moves) {
             String transformed = unorientSmartTrainingMove(move);
-            if (TextUtils.isEmpty(transformed)) {
+            if (transformed == null || transformed.length() == 0) {
                 continue;
             }
             if (builder.length() > 0) {
@@ -1185,7 +1185,7 @@ public class Scrambler {
     }
 
     private String unorientSmartTrainingMove(String move) {
-        if (TextUtils.isEmpty(move)) {
+        if (move == null || move.length() == 0) {
             return move;
         }
         int face = "URFDLB".indexOf(move.charAt(0));
@@ -1230,7 +1230,7 @@ public class Scrambler {
     public boolean isSmart333Scramble() {
         int idx = category >> 5;
         int sub = category & 0x1f;
-        return idx == 22 && sub >= 0 && sub <= 4;
+        return idx == 21 && sub >= 0 && sub <= 4;
     }
 
     public boolean is333StateScramble() {

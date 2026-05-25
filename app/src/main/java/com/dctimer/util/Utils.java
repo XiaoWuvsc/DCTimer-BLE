@@ -9,6 +9,7 @@ import java.net.URL;
 import java.util.*;
 
 import cs.min2phase.CubieCube;
+import cs.min2phase.Util;
 import scrambler.Scrambler;
 
 import com.dctimer.APP;
@@ -42,6 +43,9 @@ public class Utils {
     private static final String SOLVED_FACELET = "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB";
     public static final int[][] SMART_CUBE_ORIENTATION_FACES = createSmartCubeOrientationFaces();
     private static final Sticker[] STICKERS = createStickers();
+    private static final int[] GEOMETRY_MOVE_AXIS = {1, 0, 2, 1, 0, 2};
+    private static final int[] GEOMETRY_MOVE_LAYER = {1, 1, 1, -1, -1, -1};
+    private static final int[] GEOMETRY_MOVE_SIGN = {-1, -1, -1, 1, 1, 1};
 
     public static int grayScale(int color) {
         int red = (color >>> 16) & 0xff;
@@ -925,28 +929,41 @@ public class Utils {
         if (facelets == null || facelets.length() < 54) {
             return facelets;
         }
-        int[] faceMap = getSmartCubeFaceMap(orientationIndex);
-        if (faceMap == null) {
+        int[][] basis = getSmartCubeOrientationBasis(orientationIndex);
+        if (basis == null) {
             return facelets;
         }
         char[] oriented = new char[54];
         for (int i = 0; i < STICKERS.length; i++) {
-            oriented[getOrientedStickerIndex(STICKERS[i], faceMap)] = facelets.charAt(i);
+            oriented[getOrientedStickerIndex(STICKERS[i], basis)] = facelets.charAt(i);
         }
         return new String(oriented);
     }
 
-    private static int getOrientedStickerIndex(Sticker sticker, int[] faceMap) {
-        int face = sticker.sourceIndex / 9;
-        int newFace = faceMap[face];
-        int[] normal = faceVector(newFace);
-        int[] right = faceRightVector(newFace);
-        int[] up = faceUpVector(newFace);
-        int x = dot(sticker.x, sticker.y, sticker.z, right[0], right[1], right[2]);
-        int y = dot(sticker.x, sticker.y, sticker.z, up[0], up[1], up[2]);
-        int row = 1 - y;
-        int col = x + 1;
-        return newFace * 9 + row * 3 + col;
+    public static String unorientFacelets(String facelets, int orientationIndex) {
+        if (facelets == null || facelets.length() < 54) {
+            return facelets;
+        }
+        int[][] basis = getSmartCubeOrientationBasis(orientationIndex);
+        if (basis == null) {
+            return facelets;
+        }
+        char[] unoriented = new char[54];
+        for (int i = 0; i < STICKERS.length; i++) {
+            unoriented[i] = facelets.charAt(getOrientedStickerIndex(STICKERS[i], basis));
+        }
+        return new String(unoriented);
+    }
+
+    private static int getOrientedStickerIndex(Sticker sticker, int[][] basis) {
+        int x = dot(sticker.x, sticker.y, sticker.z, basis[0][0], basis[0][1], basis[0][2]);
+        int y = dot(sticker.x, sticker.y, sticker.z, basis[1][0], basis[1][1], basis[1][2]);
+        int z = dot(sticker.x, sticker.y, sticker.z, basis[2][0], basis[2][1], basis[2][2]);
+        int nx = dot(sticker.nx, sticker.ny, sticker.nz, basis[0][0], basis[0][1], basis[0][2]);
+        int ny = dot(sticker.nx, sticker.ny, sticker.nz, basis[1][0], basis[1][1], basis[1][2]);
+        int nz = dot(sticker.nx, sticker.ny, sticker.nz, basis[2][0], basis[2][1], basis[2][2]);
+        int face = getFaceIndex(nx, ny, nz);
+        return face * 9 + getRow(face, x, y, z) * 3 + getCol(face, x, y, z);
     }
 
     public static int orientSmartCubeMove(int move, int orientationIndex) {
@@ -956,6 +973,15 @@ public class Utils {
         int[] faceMap = getSmartCubeFaceMap(orientationIndex);
         if (faceMap == null) {
             return move;
+        }
+        for (String probeState : getMoveOrientationProbeStates()) {
+            String orientedFrom = orientFacelets(probeState, orientationIndex);
+            String orientedTo = orientFacelets(applySmartCubeMove(probeState, move), orientationIndex);
+            for (int candidate = 0; candidate < 18; candidate++) {
+                if (orientedTo.equals(applySmartCubeMoveGeometry(orientedFrom, candidate))) {
+                    return candidate;
+                }
+            }
         }
         return faceMap[move / 3] * 3 + move % 3;
     }
@@ -972,6 +998,62 @@ public class Utils {
         return move;
     }
 
+    public static String applySmartCubeMove(String facelets, int move) {
+        if (facelets == null || facelets.length() < 54 || move < 0 || move >= 18) {
+            return facelets;
+        }
+        CubieCube cube = new CubieCube();
+        if (Util.toCubieCube(facelets, cube) != 0) {
+            return applySmartCubeMoveGeometry(facelets, move);
+        }
+        return Util.toFaceCube(cube.move(move));
+    }
+
+    public static String applySmartCubeMoveGeometry(String facelets, int move) {
+        if (facelets == null || facelets.length() < 54 || move < 0 || move >= 18) {
+            return facelets;
+        }
+        int face = move / 3;
+        int turns = move % 3 == 1 ? 2 : 1;
+        int quarterTurns = GEOMETRY_MOVE_SIGN[face] * turns;
+        if (move % 3 == 2) {
+            quarterTurns = -quarterTurns;
+        }
+        int axis = GEOMETRY_MOVE_AXIS[face];
+        int layer = GEOMETRY_MOVE_LAYER[face];
+        char[] moved = facelets.substring(0, 54).toCharArray();
+        for (int i = 0; i < STICKERS.length; i++) {
+            Sticker sticker = STICKERS[i];
+            if (!isStickerInMoveLayer(sticker, axis, layer)) {
+                continue;
+            }
+            Sticker transformed = rotateSticker(sticker, axis, quarterTurns);
+            moved[transformed.index()] = facelets.charAt(i);
+        }
+        return new String(moved);
+    }
+
+    private static List<String> moveOrientationProbeStates;
+
+    private static List<String> getMoveOrientationProbeStates() {
+        if (moveOrientationProbeStates == null) {
+            List<String> probes = new ArrayList<>();
+            probes.add(SOLVED_FACELET);
+            probes.add(applySmartCubeMoves(SOLVED_FACELET, 0, 3, 6, 10));
+            probes.add(applySmartCubeMoves(SOLVED_FACELET, 1, 4, 7, 12, 15));
+            moveOrientationProbeStates = probes;
+        }
+        return moveOrientationProbeStates;
+    }
+
+    private static String applySmartCubeMoves(String facelets, int... moves) {
+        String state = facelets;
+        for (int move : moves) {
+            state = applySmartCubeMove(state, move);
+        }
+        return state;
+    }
+
     public static int[] getSmartCubeOrientationPair(int orientationIndex) {
         if (orientationIndex < 0 || orientationIndex >= SMART_CUBE_ORIENTATION_FACES.length) {
             orientationIndex = 0;
@@ -980,26 +1062,32 @@ public class Utils {
     }
 
     private static int[] getSmartCubeFaceMap(int orientationIndex) {
+        int[][] basis = getSmartCubeOrientationBasis(orientationIndex);
+        if (basis == null) {
+            return null;
+        }
+        int[] faceMap = new int[6];
+        for (int face = 0; face < 6; face++) {
+            int[] vector = faceVector(face);
+            int nx = dot(vector[0], vector[1], vector[2], basis[0][0], basis[0][1], basis[0][2]);
+            int ny = dot(vector[0], vector[1], vector[2], basis[1][0], basis[1][1], basis[1][2]);
+            int nz = dot(vector[0], vector[1], vector[2], basis[2][0], basis[2][1], basis[2][2]);
+            faceMap[face] = getFaceIndex(nx, ny, nz);
+        }
+        return faceMap;
+    }
+
+    private static int[][] getSmartCubeOrientationBasis(int orientationIndex) {
         int[] pair = getSmartCubeOrientationPair(orientationIndex);
         int top = pair[0];
         int front = pair[1];
         if (top == front || getOppositeFace(top) == front) {
             return null;
         }
-        int[] topVector = faceVector(top);
-        int[] frontVector = faceVector(front);
-        int[] rightVector = cross(topVector, frontVector);
-        int[] faceMap = new int[6];
-        for (int face = 0; face < 6; face++) {
-            int[] vector = faceVector(face);
-            if (dot(vector, topVector) == 1) faceMap[face] = 0;
-            else if (dot(vector, rightVector) == 1) faceMap[face] = 1;
-            else if (dot(vector, frontVector) == 1) faceMap[face] = 2;
-            else if (dot(vector, topVector) == -1) faceMap[face] = 3;
-            else if (dot(vector, rightVector) == -1) faceMap[face] = 4;
-            else faceMap[face] = 5;
-        }
-        return faceMap;
+        int[] yAxis = faceVector(top);
+        int[] zAxis = faceVector(front);
+        int[] xAxis = cross(yAxis, zAxis);
+        return new int[][] {xAxis, yAxis, zAxis};
     }
 
     private static int[][] createSmartCubeOrientationFaces() {
@@ -1175,6 +1263,31 @@ public class Utils {
             default:
                 return 0;
         }
+    }
+
+    private static boolean isStickerInMoveLayer(Sticker sticker, int axis, int layer) {
+        int coordinate;
+        switch (axis) {
+            case 0:
+                coordinate = sticker.x;
+                break;
+            case 1:
+                coordinate = sticker.y;
+                break;
+            default:
+                coordinate = sticker.z;
+                break;
+        }
+        return layer > 0 ? coordinate > 0 : coordinate < 0;
+    }
+
+    private static Sticker rotateSticker(Sticker sticker, int axis, int quarterTurns) {
+        int turns = ((quarterTurns % 4) + 4) % 4;
+        Sticker transformed = sticker;
+        for (int i = 0; i < turns; i++) {
+            transformed = transformed.rotate(axis);
+        }
+        return transformed;
     }
 
     private static class Sticker {

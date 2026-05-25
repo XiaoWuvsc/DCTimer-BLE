@@ -8,7 +8,7 @@ import java.util.List;
 import static com.dctimer.APP.smartCubeTrainingOrientation;
 
 public final class SmartCubeTraining {
-    public static final int SMART_333_BASE = 22 << 5;
+    public static final int SMART_333_BASE = 21 << 5;
     public static final int SMART_333_WCA = SMART_333_BASE;
     public static final int SMART_333_OLL = SMART_333_BASE + 1;
     public static final int SMART_333_PLL = SMART_333_BASE + 2;
@@ -26,7 +26,7 @@ public final class SmartCubeTraining {
     public static boolean isSmart333(int scrambleIdx) {
         int idx = scrambleIdx >> 5;
         int sub = scrambleIdx & 0x1f;
-        return idx == 22 && sub >= 0 && sub <= 4;
+        return idx == 21 && sub >= 0 && sub <= 4;
     }
 
     public static boolean isTrainingOrientationMode(int scrambleIdx) {
@@ -40,9 +40,9 @@ public final class SmartCubeTraining {
         String oriented = Utils.orientFacelets(facelet, smartCubeTrainingOrientation);
         switch (scrambleIdx) {
             case SMART_333_OLL:
-                return isSolvedForMask(oriented, OLL_MASK);
+                return isSolvedForMask(oriented, OLL_MASK) || isSolvedForMask(facelet, getPhysicalMask(OLL_MASK));
             case SMART_333_F2L:
-                return isSolvedForMask(oriented, F2L_MASK);
+                return isSolvedForMask(oriented, F2L_MASK) || isSolvedForMask(facelet, getPhysicalMask(F2L_MASK));
             case SMART_333_WCA:
             case SMART_333_PLL:
             case SMART_333_LAST_LAYER:
@@ -67,6 +67,34 @@ public final class SmartCubeTraining {
             }
         }
         return true;
+    }
+
+    private static int[][] getPhysicalMask(int[][] displayMask) {
+        String[] physicalMask = new String[displayMask.length];
+        for (int i = 0; i < displayMask.length; i++) {
+            char[] facelet = "------------------------------------------------------".toCharArray();
+            char maskChar = (char) ('A' + i);
+            for (int index : displayMask[i]) {
+                facelet[index] = maskChar;
+            }
+            physicalMask[i] = Utils.unorientFacelets(new String(facelet), smartCubeTrainingOrientation);
+        }
+        int[][] result = new int[physicalMask.length][];
+        for (int i = 0; i < physicalMask.length; i++) {
+            List<Integer> indices = new ArrayList<>();
+            char maskChar = (char) ('A' + i);
+            for (int j = 0; j < physicalMask[i].length(); j++) {
+                if (physicalMask[i].charAt(j) == maskChar) {
+                    indices.add(j);
+                }
+            }
+            int[] equ = new int[indices.size()];
+            for (int j = 0; j < indices.size(); j++) {
+                equ[j] = indices.get(j);
+            }
+            result[i] = equ;
+        }
+        return result;
     }
 
     private static boolean isSolvedIgnoringRotation(String facelet) {
